@@ -24,7 +24,8 @@ public class XLSReader {
     {
         Workbook workbook = XLSReader.getWorkbook("C:\\Users\\ДИМА\\Documents\\GitHub\\BirthdayNotificationer\\BirthdaysInfo.xls");
         ArrayList<String> birthdayList = XLSReader.getPersons(workbook);
-        XLSReader.createMessage(birthdayList);
+        String message = XLSReader.createMessage(birthdayList);
+        System.out.println(message);
     }
 
     private static Workbook getWorkbook(String path) throws IOException
@@ -47,76 +48,58 @@ public class XLSReader {
     {
         // Получаем лист именинников
         Sheet sheet = workbook.getSheetAt(0);
-        ArrayList<String> birthdayList = new ArrayList<>();
-
         // Получаем дату завтрашнего дня
         Date date = Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant());
         Calendar currentDateCalendar = new GregorianCalendar();
         Calendar additionalCalendar = new GregorianCalendar();
         currentDateCalendar.setTime(date);
         boolean is29February = false;
-        if (check29February()!=null && currentDateCalendar.get(Calendar.DAY_OF_MONTH) != 29 && currentDateCalendar.get(Calendar.MONTH) != Calendar.FEBRUARY)
+        if (check29February()!=null)
         {
             // Если сегодня 28.02 и завтра не 29.02, то создаем дополнительную дату
             // 01.03 поздравляем как родившихся 01.03, так и родившихся 29.02
-            Date additionalDate = check29February();
-            additionalCalendar.setTime(additionalDate);
+            additionalCalendar = check29February();
             is29February = true;
         }
-
-        for (Row row: sheet)
+        if(is29February)
         {
-            Calendar birthdayDateCalendar = new GregorianCalendar();
-            birthdayDateCalendar.setTime(row.getCell(1).getDateCellValue());
-            // Получаем дату рождения сотруднника и сравниваем с нашими датами
-            if(birthdayDateCalendar.get(Calendar.DAY_OF_MONTH) == currentDateCalendar.get(Calendar.DAY_OF_MONTH) && birthdayDateCalendar.get(Calendar.MONTH) == currentDateCalendar.get(Calendar.MONTH) )
-            {
-                // Если ДР сотрудника совпадает с завтрашней датой, записываем его имя
-                birthdayList.add(row.getCell(0).getStringCellValue());
-            }
-            if(is29February)
-            {
-                if(birthdayDateCalendar.get(Calendar.DAY_OF_MONTH) == additionalCalendar.get(Calendar.DAY_OF_MONTH) && birthdayDateCalendar.get(Calendar.MONTH) == additionalCalendar.get(Calendar.MONTH) )
-                {
-                    // Если ДР сотрудника 29 февраля, год не високосный, и завтра 01.03, то поздравим его тоже
-                    birthdayList.add(row.getCell(0).getStringCellValue());
-                }
-            }
+            return fillList(sheet, currentDateCalendar, additionalCalendar);
         }
-        return birthdayList;
+        else
+        {
+            return fillList(sheet, currentDateCalendar);
+        }
     }
 
-    private static void createMessage(ArrayList<String> birthdayList)
+    private static String createMessage(ArrayList<String> birthdayList)
     {
         // Составляем уведомление, содержащее имена именинников
         MessageFormat form = messageFormat(birthdayList.size());
         if(form == null)
         {
-            return;
+            return null;
         }
-
         String names = "";
-
         for (int i = 0; i< birthdayList.size(); i++)
         {
             names += birthdayList.get(i) + ", ";
-
         }
         names = names.substring(0, names.length() - 2);
         Object[] args = {names};
-        String message = form.format(args);
-        System.out.println(message);
+        return form.format(args);
     }
 
-    private static Date check29February()
+    private static Calendar check29February()
     {
-        // Если сегодня 28.02, то возвращаем дату 29.02
+        // Если сегодня 28.02, а завтра не 29.02 то возвращаем дату 29.02
         Calendar calendar = new GregorianCalendar();
+        Calendar tomorrow = new GregorianCalendar();
         calendar.setTime(Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant()));
-        if(calendar.get(Calendar.DAY_OF_MONTH) == 28 && calendar.get(Calendar.MONTH) == 1)
+        tomorrow.setTime(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        if(calendar.get(Calendar.DAY_OF_MONTH) == 28 && calendar.get(Calendar.MONTH) == Calendar.FEBRUARY && tomorrow.get(Calendar.DAY_OF_MONTH) != 29 && tomorrow.get(Calendar.MONTH) != Calendar.FEBRUARY)
         {
-
-            return new Date(2020, Calendar.FEBRUARY, 29);
+            calendar.setTime(new Date(2020, Calendar.FEBRUARY, 29));
+            return calendar;
         }
         else return null;
     }
@@ -135,9 +118,47 @@ public class XLSReader {
             default:
                 form = new MessageFormat("Уважаемые коллеги! Завтра свои дни рождений празднуют {0}!");
                 break;
-
         }
         return form;
+    }
+
+    private static ArrayList<String> fillList(Sheet sheet, Calendar currentDateCalendar)
+    {
+        ArrayList<String> birthdayList = new ArrayList<>();
+        for (Row row: sheet)
+        {
+            Calendar birthdayDateCalendar = new GregorianCalendar();
+            birthdayDateCalendar.setTime(row.getCell(1).getDateCellValue());
+            // Получаем дату рождения сотруднника и сравниваем с нашими датами
+            if(birthdayDateCalendar.get(Calendar.DAY_OF_MONTH) == currentDateCalendar.get(Calendar.DAY_OF_MONTH) && birthdayDateCalendar.get(Calendar.MONTH) == currentDateCalendar.get(Calendar.MONTH) )
+            {
+                // Если ДР сотрудника совпадает с завтрашней датой, записываем его имя
+                birthdayList.add(row.getCell(0).getStringCellValue());
+            }
+        }
+        return birthdayList;
+    }
+
+    private static ArrayList<String> fillList(Sheet sheet, Calendar currentDateCalendar, Calendar additionalCalendar)
+    {
+        ArrayList<String> birthdayList = new ArrayList<>();
+        for (Row row: sheet)
+        {
+            Calendar birthdayDateCalendar = new GregorianCalendar();
+            birthdayDateCalendar.setTime(row.getCell(1).getDateCellValue());
+            // Получаем дату рождения сотруднника и сравниваем с нашими датами
+            if(birthdayDateCalendar.get(Calendar.DAY_OF_MONTH) == currentDateCalendar.get(Calendar.DAY_OF_MONTH) && birthdayDateCalendar.get(Calendar.MONTH) == currentDateCalendar.get(Calendar.MONTH) )
+            {
+                // Если ДР сотрудника совпадает с завтрашней датой, записываем его имя
+                birthdayList.add(row.getCell(0).getStringCellValue());
+            }
+            if(birthdayDateCalendar.get(Calendar.DAY_OF_MONTH) == additionalCalendar.get(Calendar.DAY_OF_MONTH) && birthdayDateCalendar.get(Calendar.MONTH) == additionalCalendar.get(Calendar.MONTH) )
+            {
+                // Если ДР сотрудника 29 февраля, год не високосный, и завтра 01.03, то поздравим его тоже
+                birthdayList.add(row.getCell(0).getStringCellValue());
+            }
+        }
+        return birthdayList;
     }
 
 
