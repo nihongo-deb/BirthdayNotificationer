@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 /**
  * @author KAWAIISHY
@@ -12,16 +13,17 @@ import java.util.Properties;
  * @created 30.06.2022
  */
 public class EmailSender {
-    private  FileInputStream fileInputStreamSendProps;
-    private  FileInputStream fileInputStreamUserProps;
-    private  Properties sendProperties = new Properties();
-    private  Properties userProperties = new Properties();
-    private  Message message;
-    private  Session session;
+    private FileInputStream fileInputStreamSendProps;
+    private FileInputStream fileInputStreamUserProps;
+    private Properties sendProperties = new Properties();
+    private Properties userProperties = new Properties();
+    private Message message;
+    private Session session;
+    private final String REGEX_EMAIL_VALIDATOR = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
 
     private static EmailSender emailSender = new EmailSender();
 
-    private EmailSender(){
+    private EmailSender() {
         try {
             fileInputStreamSendProps = new FileInputStream("src/main/resources/mail.properties");
             fileInputStreamUserProps = new FileInputStream("src/main/resources/user.properties");
@@ -53,11 +55,14 @@ public class EmailSender {
         });
     }
 
-    public void createMessage(String emailAddress, String subject, String innerText){
+    public void createMessage(String emailAddress, String subject, String innerText) {
         message = new MimeMessage(session);
         try {
             message.setFrom(new InternetAddress(userProperties.getProperty("mail.user")));
-            InternetAddress[] internetAddresses = {new InternetAddress(emailAddress)};
+            InternetAddress[] internetAddresses;
+            if (validateEmail(emailAddress))
+                internetAddresses = new InternetAddress[] {new InternetAddress(emailAddress)};
+            else return;
             message.setRecipients(Message.RecipientType.TO, internetAddresses);
             message.setSubject(subject);
             message.setText(innerText);
@@ -66,7 +71,7 @@ public class EmailSender {
         }
     }
 
-    public void sendMessage(){
+    public void sendMessage() {
         try {
             Transport.send(message);
         } catch (MessagingException e) {
@@ -74,7 +79,22 @@ public class EmailSender {
         }
     }
 
-    public static EmailSender getEmailSender(){
+    public static EmailSender getEmailSender() {
         return emailSender;
+    }
+
+    public boolean validateEmail (String email){
+        if (email == null || email.isEmpty()){
+            System.out.println("email is invalid");
+            return false;
+        }
+        Pattern pattern = Pattern.compile(REGEX_EMAIL_VALIDATOR);
+        if (pattern.matcher(email).matches()){
+            System.out.println("email is valid");
+            return true;
+        } else {
+            System.out.println("email is invalid");
+            return false;
+        }
     }
 }

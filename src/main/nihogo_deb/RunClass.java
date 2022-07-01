@@ -17,5 +17,8 @@ public class RunClass {
                 "just title", "just text");
 //        дима, не разкоменчивай плз
 //        emailSender.sendMessage();
+        emailSender.validateEmail("dal34@tpu.ru");
+        emailSender.validateEmail("dal34@tpuru");
+        emailSender.validateEmail("@@.rtyrty");
     }
 }
