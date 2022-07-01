@@ -11,7 +11,11 @@ import java.util.Properties;
  * @created 30.06.2022
  */
 public class RunClass {
-    public static void main(String[] args) throws MessagingException, IOException {
-
+    public static void main(String[] args) {
+        EmailSender emailSender = EmailSender.getEmailSender();
+        emailSender.createMessage("dal34@tpu.ru",
+                "just title", "just text");
+//        дима, не разкоменчивай плз
+//        emailSender.sendMessage();
     }
 }
