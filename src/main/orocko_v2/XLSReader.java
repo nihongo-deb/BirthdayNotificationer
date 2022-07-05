@@ -17,23 +17,33 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 
-
 public class XLSReader {
 
-    public static void main(String[] args) throws IOException
-    {
-        Workbook workbook = XLSReader.getWorkbook("C:\\Users\\ДИМА\\Documents\\GitHub\\BirthdayNotificationer\\BirthdaysInfo.xls");
-        ArrayList<String> birthdayList = XLSReader.getPersons(workbook);
-        String message = XLSReader.createMessage(birthdayList);
-        System.out.println(message);
-    }
+    /**
+     * Public method to get access from other classes
+     * @return message which will be sent
+     * @throws IOException if we can not access to the Excel file
+     */
+   public String createOutput() throws IOException
+   {
+       Workbook workbook = XLSReader.getWorkbook("C:\\Users\\ДИМА\\Documents\\GitHub\\BirthdayNotificationer\\BirthdaysInfo.xls");
+       ArrayList<String> birthdayList = XLSReader.getPersons(workbook);
+       String message = XLSReader.createMessage(birthdayList);
+       return message;
+   }
 
+   /**
+    * Returns workbook depending on file format
+    * @param path where the file is stored
+    * @throws IOException if we can not access the file
+    * @return workbook representation of Excel file
+    * */
     private static Workbook getWorkbook(String path) throws IOException
     {
         // Получаем доступ к Excel-файлу
-        File BirthdayInfoFile = new File(path);
-        FileInputStream fis = new FileInputStream(BirthdayInfoFile);
-        String type = new Tika().detect(BirthdayInfoFile);
+        File birthdayInfoFile = new File(path);
+        FileInputStream fis = new FileInputStream(birthdayInfoFile);
+        String type = new Tika().detect(birthdayInfoFile);
         switch(type)
         {
             case ("application/vnd.ms-excel"):
@@ -44,7 +54,12 @@ public class XLSReader {
         return null;
     }
 
-    private static ArrayList<String> getPersons(Workbook workbook) throws IOException
+    /**
+     * Get persons whose birthdays will be tomorrow
+     * @param workbook representation of Excel file where birthdays data stored
+     * @return ArrayList<String> with persons whose birthdays will be tomorrow
+     */
+    private static ArrayList<String> getPersons(Workbook workbook)
     {
         // Получаем лист именинников
         Sheet sheet = workbook.getSheetAt(0);
@@ -71,6 +86,11 @@ public class XLSReader {
         }
     }
 
+    /**
+     * Creates a message about tomorrow's birthdays
+     * @param birthdayList array of persons whose birthdays will be tomorrow
+     * @return message which will be sent
+     */
     private static String createMessage(ArrayList<String> birthdayList)
     {
         // Составляем уведомление, содержащее имена именинников
@@ -89,6 +109,10 @@ public class XLSReader {
         return form.format(args);
     }
 
+    /**
+     * Checks if today is 28th February and non-leap year
+     * @return calendar which store a date of 29th February
+     */
     private static Calendar check29February()
     {
         // Если сегодня 28.02, а завтра не 29.02 то возвращаем дату 29.02
@@ -104,6 +128,11 @@ public class XLSReader {
         else return null;
     }
 
+    /**
+     * Change message format depending on amount of tomorrow's birthdays
+     * @param size amount of birthdays tomorrow
+     * @return format of the message
+     */
     private static MessageFormat messageFormat(int size)
     {
         // Изменение содержания сообщения в зависимости от количества именинников
@@ -122,6 +151,12 @@ public class XLSReader {
         return form;
     }
 
+    /**
+     * Fills birthday list if we don't have to take into account 29th February
+     * @param sheet page in Excel with birthdays data
+     * @param currentDateCalendar store information about tomorrow's date
+     * @return list of person whose birthdays will be tomorrow
+     */
     private static ArrayList<String> fillList(Sheet sheet, Calendar currentDateCalendar)
     {
         ArrayList<String> birthdayList = new ArrayList<>();
@@ -139,6 +174,13 @@ public class XLSReader {
         return birthdayList;
     }
 
+    /**
+     * Fills birthday list if we have to take into account 29th February
+     * @param sheet page in Excel with birthdays data
+     * @param currentDateCalendar store information about tomorrow's date
+     * @param additionalCalendar store 29th February date
+     * @return list of person whose birthdays will be tomorrow
+     */
     private static ArrayList<String> fillList(Sheet sheet, Calendar currentDateCalendar, Calendar additionalCalendar)
     {
         ArrayList<String> birthdayList = new ArrayList<>();
@@ -160,6 +202,4 @@ public class XLSReader {
         }
         return birthdayList;
     }
-
-
 }
