@@ -12,7 +12,7 @@ import java.util.Properties;
  */
 public class RunClass {
     public static void main(String[] args) {
-        EmailSender emailSender = EmailSender.getEmailSender();
+        EmailSender emailSender = new EmailSender();
         emailSender.createMessage("dal34@tpu.ru",
                 "just title", "just text");
 //        дима, не разкоменчивай плз
